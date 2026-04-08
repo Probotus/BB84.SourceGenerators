@@ -1,20 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
+	<PropertyGroup>
 		<IsPackable>True</IsPackable>
-    <EnforceExtendedAnalyzerRules>True</EnforceExtendedAnalyzerRules>
-    <IncludeBuildOutput>False</IncludeBuildOutput>
-    <IsRoslynComponent>True</IsRoslynComponent>
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
-    <PackageReference Include="PolySharp">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+		<!-- Marks this as a build-time-only dependency so it won't flow transitively to consumers' dependents -->
+		<DevelopmentDependency>True</DevelopmentDependency>
+		<EnforceExtendedAnalyzerRules>True</EnforceExtendedAnalyzerRules>
+		<!-- Disables API compatibility validation (not applicable for source generator packages) -->
+		<EnablePackageValidation>False</EnablePackageValidation>
+		<IncludeBuildOutput>False</IncludeBuildOutput>
+		<IsRoslynComponent>True</IsRoslynComponent>
+		<!-- Suppresses the expected warning about lib/ TFM without a matching dependency group (we intentionally suppress dependencies) -->
+		<NoWarn>$(NoWarn);NU5128</NoWarn>
+		<!-- Prevents Roslyn (Microsoft.CodeAnalysis.CSharp) and other dependencies from being added as NuGet dependencies — consumers don't need them -->
+		<SuppressDependenciesWhenPacking>True</SuppressDependenciesWhenPacking>
+		<TargetFramework>netstandard2.0</TargetFramework>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="PolySharp">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<!-- Packs the generator DLL into the analyzers folder so Roslyn loads it as a source generator -->
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="True" PackagePath="analyzers/dotnet/cs" Visible="False" />
+		<!-- Packs the DLL into the lib folder so consumers can reference the attribute types -->
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="True" PackagePath="lib/$(TargetFramework)" Visible="False" />
+	</ItemGroup>
 </Project>
