@@ -2,11 +2,15 @@
 
 A collection of C# source generators that automatically generate boilerplate code at compile time, reducing manual coding and improving code maintainability.
 
+[![CI](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/ci.yml)
+[![CD](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/cd.yml)
 [![CodeQL](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/github-code-scanning/codeql)
 [![Dependabot](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/dependabot/dependabot-updates/badge.svg?branch=main)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/dependabot/dependabot-updates)
+[![NuGet](https://img.shields.io/nuget/v/BB84.SourceGenerators.svg?logo=nuget&logoColor=white)](https://www.nuget.org/packages/BB84.SourceGenerators)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![.NET Standard 2.0](https://img.shields.io/badge/.NET%20Standard-2.0-blue.svg)](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
+[![C#](https://img.shields.io/badge/C%23-13.0-239120)](https://github.com/BoBoBaSs84/BB84.SourceGenerators)
+[![.NET Standard 2.0](https://img.shields.io/badge/.NET%20Standard-2.0-5C2D91)](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
 [![Issues](https://img.shields.io/github/issues/BoBoBaSs84/BB84.SourceGenerators)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/issues)
 [![Commit](https://img.shields.io/github/last-commit/BoBoBaSs84/BB84.SourceGenerators)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/commit/main)
 [![RepoSize](https://img.shields.io/github/repo-size/BoBoBaSs84/BB84.SourceGenerators)](https://github.com/BoBoBaSs84/BB84.SourceGenerators)
@@ -228,20 +232,6 @@ var mockFileProvider = new Mock<IFileProvider>();
 mockFileProvider.Setup(x => x.ReadAllText(It.IsAny<string>())).Returns("test content");
 ```
 
-#### Excluding Methods
-
-```csharp
-// Exclude specific methods from generation
-[GenerateAbstraction(
-    typeof(File), 
-    typeof(IFileProvider), 
-    typeof(FileProvider),
-    "Delete", "Move", "Replace")]
-public partial class FileProvider
-{
-}
-```
-
 ## Requirements
 
 - .NET Standard 2.0 or higher
@@ -273,7 +263,7 @@ Source generators run during compilation and generate additional C# source files
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request but see the [Conduct](CODE_OF_CONDUCT.md) first.
 
 ## License
 
