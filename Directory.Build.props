@@ -2,7 +2,7 @@
 
 	<PropertyGroup Label="Versioning">
 		<VersionMajor>1</VersionMajor>
-		<VersionMinor>0</VersionMinor>
+		<VersionMinor>1</VersionMinor>
 		<VersionPatch>$([System.DateTime]::UtcNow.ToString("MMdd"))</VersionPatch>
 		<VersionRevision>$([System.DateTime]::UtcNow.TimeOfDay.TotalMinutes.ToString("0"))</VersionRevision>
 		<VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionPatch).$(VersionRevision)</VersionPrefix>
@@ -32,12 +32,14 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Tests'))" Label="MetaData">
-		<Authors>BoBoBaSs84</Authors>
-		<Company>https://github.com/BoBoBaSs84</Company>
-		<Copyright>Copyright © $([System.DateTime]::UtcNow.Year) BoBoBaSs84</Copyright>		
-		<Product>BB84.SourceGenerators</Product>		
+		<Author>BoBoBaSs84</Author>
+		<Authors>$(Author)</Authors>
+		<Company>https://github.com/$(Author)</Company>
+		<Copyright>Copyright © $([System.DateTime]::UtcNow.Year) $(Author)</Copyright>
+		<Description>A collection of C# source generators that automatically generate boilerplate code at compile time, reducing manual coding and improving code maintainability.</Description>
+		<Product>BB84.SourceGenerators</Product>
 		<RepositoryType>git</RepositoryType>
-		<RepositoryUrl>https://github.com/BoBoBaSs84/BB84.SourceGenerators</RepositoryUrl>
+		<RepositoryUrl>https://github.com/$(Author)/$(Product)</RepositoryUrl>
 		<Title>$(AssemblyName)</Title>
 	</PropertyGroup>
 
@@ -45,10 +47,10 @@
 		<PackageIcon>icon.png</PackageIcon>
 		<PackageId>$(AssemblyName)</PackageId>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<PackageProjectUrl>https://github.com/BoBoBaSs84/BB84.SourceGenerators</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/$(Author)/$(Product)</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>https://github.com/BoBoBaSs84/BB84.SourceGenerators/releases/tag/v$(FileVersion)</PackageReleaseNotes>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>		
+		<PackageReleaseNotes>https://github.com/$(Author)/$(Product)/releases/tag/v$(FileVersion)</PackageReleaseNotes>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<PackageTags>source-generators; roslyn; analyzers; csharp; generators; code-generation</PackageTags>
 		<PackageVersion>$(FileVersion)</PackageVersion>
 	</PropertyGroup>
