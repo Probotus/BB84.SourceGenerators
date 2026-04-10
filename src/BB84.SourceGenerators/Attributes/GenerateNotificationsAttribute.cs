@@ -19,7 +19,7 @@ namespace BB84.SourceGenerators.Attributes;
 /// Indicates whether a boolean property named <c>IsChanged</c> should be generated.
 /// </param>
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-public sealed class GenerateNotificationsAttribute(bool isChanged = false) : Attribute
+internal sealed class GenerateNotificationsAttribute(bool isChanged = false) : Attribute
 {
 	/// <summary>
 	/// Indicates whether a boolean property named <c>IsChanged</c> should be generated.

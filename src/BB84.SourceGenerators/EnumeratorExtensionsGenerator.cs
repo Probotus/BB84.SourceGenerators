@@ -8,25 +8,37 @@ using System.Text;
 
 using BB84.SourceGenerators.Attributes;
 using BB84.SourceGenerators.Extensions;
-using BB84.SourceGenerators.Generators.Base;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace BB84.SourceGenerators.Generators;
+namespace BB84.SourceGenerators;
 
 /// <summary>
 /// Responsible for generating enumerator extensions for enumerators marked
 /// with the <see cref="GenerateEnumeratorExtensionsAttribute"/> attribute.
 /// </summary>
 [Generator(LanguageNames.CSharp)]
-public sealed class EnumeratorExtensionsGenerator : AttributeBasedGenerator<GenerateEnumeratorExtensionsAttribute>
+public sealed class EnumeratorExtensionsGenerator : IIncrementalGenerator
 {
-	/// <inheritdoc/>
-	public override string GeneratorName => "BB84.SourceGenerators.EnumeratorExtensionsGenerator";
+	private static readonly string GeneratorName = typeof(EnumeratorExtensionsGenerator).FullName;
+	private static readonly string GeneratorAttributeName = typeof(GenerateEnumeratorExtensionsAttribute).FullName;
 
 	/// <inheritdoc/>
-	protected override void Execute(SourceProductionContext context, SyntaxNode syntaxNode)
+	public void Initialize(IncrementalGeneratorInitializationContext context)
+	{
+		IncrementalValuesProvider<SyntaxNode> provider = context.SyntaxProvider
+			.ForAttributeWithMetadataName(
+				fullyQualifiedMetadataName: GeneratorAttributeName,
+				predicate: (node, _) => Predicate(node),
+				transform: (context, _) => Transform(context.TargetNode))
+			.Where(node => node is not null);
+
+		context.RegisterSourceOutput(provider, Execute);
+	}
+
+	/// <inheritdoc/>
+	private void Execute(SourceProductionContext context, SyntaxNode syntaxNode)
 	{
 		if (syntaxNode is not EnumDeclarationSyntax enumDeclaration)
 			return;
@@ -61,11 +73,11 @@ public sealed class EnumeratorExtensionsGenerator : AttributeBasedGenerator<Gene
 	}
 
 	/// <inheritdoc/>
-	protected override SyntaxNode Transform(SyntaxNode targetNode)
+	private static SyntaxNode Transform(SyntaxNode targetNode)
 		=> (EnumDeclarationSyntax)targetNode;
 
 	/// <inheritdoc/>
-	protected override bool Predicate(SyntaxNode node)
+	private static bool Predicate(SyntaxNode node)
 		=> node is EnumDeclarationSyntax;
 
 	private static void AppendHeader(StringBuilder builder)

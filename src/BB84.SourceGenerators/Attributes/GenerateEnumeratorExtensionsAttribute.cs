@@ -3,11 +3,21 @@
 //
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
+using System.ComponentModel;
+
 namespace BB84.SourceGenerators.Attributes;
 
 /// <summary>
-/// Indicates that the decorated enumeration should have extension methods generated.
+/// Indicates that the decorated <c>enum</c> should have extension methods generated for it.
+/// The generated code will include the following extension methods:
+/// <list type="bullet">
+/// <item>A method to get the name of the enum value.</item>
+/// <item>A method to get the description of the enum value from the <see cref="DescriptionAttribute"/>.</item>
+/// <item>A method to get the underlying integer value of the enum value.</item>
+/// <item>A method to get all the enum values as a list.</item>
+/// <item>A method to get all the enum names as a list.</item>
+/// </list>
 /// </summary>
 [AttributeUsage(AttributeTargets.Enum, Inherited = false, AllowMultiple = false)]
-public sealed class GenerateEnumeratorExtensionsAttribute : Attribute
+internal sealed class GenerateEnumeratorExtensionsAttribute : Attribute
 { }
