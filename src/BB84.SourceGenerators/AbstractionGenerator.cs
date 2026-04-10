@@ -12,7 +12,7 @@ using BB84.SourceGenerators.Requests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace BB84.SourceGenerators.Generators;
+namespace BB84.SourceGenerators;
 
 /// <summary>
 /// Represents a source generator that generates abstractions for static classes.
@@ -20,8 +20,8 @@ namespace BB84.SourceGenerators.Generators;
 [Generator(LanguageNames.CSharp)]
 public sealed class AbstractionGenerator : IIncrementalGenerator
 {
-	private const string GeneratorName = "BB84.SourceGenerators.Generators.AbstractionGenerator";
-	private static readonly string GenerateAbstractionAttributeQualifiedName = typeof(GenerateAbstractionAttribute).FullName;
+	private static readonly string GeneratorName = typeof(AbstractionGenerator).FullName;
+	private static readonly string GeneratorAttributeName = typeof(GenerateAbstractionAttribute).FullName;
 
 	/// <inheritdoc />
 	public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -203,7 +203,7 @@ public sealed class AbstractionGenerator : IIncrementalGenerator
 
 		foreach (AttributeData attributeData in classSymbol.GetAttributes())
 		{
-			if (attributeData.AttributeClass?.ToDisplayString() == GenerateAbstractionAttributeQualifiedName)
+			if (attributeData.AttributeClass?.ToDisplayString() == GeneratorAttributeName)
 			{
 				// Extract constructor arguments
 				TypedConstant targetTypeArg = attributeData.ConstructorArguments[0];
