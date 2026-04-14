@@ -1,4 +1,4 @@
-# BB84.SourceGenerators
+ï»¿# BB84.SourceGenerators
 
 A collection of C# source generators that automatically generate boilerplate code at compile time, reducing manual coding and improving code maintainability.
 
@@ -6,7 +6,6 @@ A collection of C# source generators that automatically generate boilerplate cod
 [![CD](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/cd.yml)
 [![CodeQL](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/github-code-scanning/codeql)
 [![Dependabot](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/dependabot/dependabot-updates/badge.svg?branch=main)](https://github.com/BoBoBaSs84/BB84.SourceGenerators/actions/workflows/dependabot/dependabot-updates)
-
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![C#](https://img.shields.io/badge/C%23-13.0-239120)](https://github.com/BoBoBaSs84/BB84.SourceGenerators)
@@ -112,6 +111,7 @@ Automatically generates properties with `INotifyPropertyChanged` and `INotifyPro
 ```
 
 **Parameters:**
+
 - `isChanged` - When `true`, generates an additional `IsChanged` boolean property that is set to `true` when any property changes
 
 #### Example
@@ -179,6 +179,7 @@ Generates interface and implementation classes for static classes, making them t
 ```
 
 **Parameters:**
+
 - `targetType` - The static class to generate an abstraction for
 - `abstractionType` - The interface type to generate
 - `implementationType` - The implementation class type to generate
@@ -192,12 +193,10 @@ using BB84.SourceGenerators.Attributes;
 // Generate abstraction for System.IO.File
 [GenerateAbstraction(typeof(File), typeof(IFileProvider), typeof(FileProvider))]
 public partial class FileProvider
-{
-}
+{ }
 
 public partial interface IFileProvider
-{
-}
+{ }
 ```
 
 #### Generated Code
@@ -217,14 +216,10 @@ public class DocumentService
     private readonly IFileProvider _fileProvider;
 
     public DocumentService(IFileProvider fileProvider)
-    {
-        _fileProvider = fileProvider;
-    }
+        => _fileProvider = fileProvider;
 
     public string ReadDocument(string path)
-    {
-        return _fileProvider.ReadAllText(path);
-    }
+        => _fileProvider.ReadAllText(path);
 }
 
 // In your DI container setup
@@ -248,6 +243,7 @@ Generates static `Read` and `Write` methods for classes, enabling compile-time I
 ```
 
 **Parameters:**
+
 - `GenerateIniFile` - Marks a class for INI file code generation
 - `GenerateIniFileSection` - Marks a property as an INI file section. The optional `name` parameter specifies the section name; if omitted, the property name is used
 - `GenerateIniFileValue` - Marks a property as a key-value pair within an INI section. The optional `name` parameter specifies the key name; if omitted, the property name is used
@@ -318,17 +314,20 @@ config.Database.Timeout = 60.0;
 
 string output = AppConfig.Write(config);
 File.WriteAllText("config.ini", output);
+```
 
-// Output:
-// [General]
-// AppName=MyApp
-// Version=1
-// Debug=False
-//
-// [Database]
-// Server=localhost
-// Port=5432
-// Timeout=60
+**Output:**
+
+```ini
+[General]
+AppName=MyApp
+Version=1
+Debug=False
+
+[Database]
+Server=localhost
+Port=5432
+Timeout=60
 ```
 
 ### 5. Builder Generator
@@ -403,6 +402,7 @@ Generates a `ToString()` override for classes, returning a formatted string cont
 ```
 
 **Parameters:**
+
 - `excludeProperties` - Optional list of property names to exclude from the generated `ToString()` output
 
 #### Example
@@ -474,6 +474,7 @@ Console.WriteLine(user.ToString());
 ## Performance Benefits
 
 ### Enum Extensions
+
 The generated enum extension methods provide significant performance improvements over reflection-based `Enum` methods:
 
 - **ToStringFast()** - Avoids boxing and uses switch expressions
@@ -481,25 +482,29 @@ The generated enum extension methods provide significant performance improvement
 - **GetNamesFast()/GetValuesFast()** - Returns pre-allocated arrays instead of reflection
 
 ### Notification Properties
+
 - Generates optimized property setters with inline equality checks
 - Avoids reflection overhead of PropertyChanged.Fody or similar tools
 - Compile-time code generation means zero runtime overhead
 
 ### INI File Serialization
+
 - Generates direct string parsing and formatting code at compile time
 - Avoids runtime reflection or third-party INI parsing libraries
 - Uses `CultureInfo.InvariantCulture` for consistent cross-platform formatting
 
 ### Builder Pattern
+
 - Generates a complete fluent builder class at compile time
 - Eliminates hand-written builder boilerplate that must be kept in sync with the target class
 - Replaces reflection-based or expression-tree-based builder libraries with zero-overhead generated code
 - Full nullable reference type support for type-safe builder APIs
 
 ### ToString Generation
+
 - Generates a direct property-formatting `ToString()` override at compile time
 - Replaces runtime reflection approaches (`typeof(T).GetProperties().Select(...)`) with zero-overhead generated code
-- Automatically stays in sync with the class definition — no manual maintenance required
+- Automatically stays in sync with the class definition - no manual maintenance required
 - Supports property exclusion for sensitive or verbose fields
 
 ## How It Works
