@@ -194,12 +194,10 @@ using BB84.SourceGenerators.Attributes;
 // Generate abstraction for System.IO.File
 [GenerateAbstraction(typeof(File), typeof(IFileProvider), typeof(FileProvider))]
 public partial class FileProvider
-{
-}
+{ }
 
 public partial interface IFileProvider
-{
-}
+{ }
 ```
 
 #### Generated Code
@@ -219,14 +217,10 @@ public class DocumentService
     private readonly IFileProvider _fileProvider;
 
     public DocumentService(IFileProvider fileProvider)
-    {
-        _fileProvider = fileProvider;
-    }
+        => _fileProvider = fileProvider;
 
     public string ReadDocument(string path)
-    {
-        return _fileProvider.ReadAllText(path);
-    }
+        => _fileProvider.ReadAllText(path);
 }
 
 // In your DI container setup
@@ -321,17 +315,20 @@ config.Database.Timeout = 60.0;
 
 string output = AppConfig.Write(config);
 File.WriteAllText("config.ini", output);
+```
 
-// Output:
-// [General]
-// AppName=MyApp
-// Version=1
-// Debug=False
-//
-// [Database]
-// Server=localhost
-// Port=5432
-// Timeout=60
+**Output:**
+
+```ini
+[General]
+AppName=MyApp
+Version=1
+Debug=False
+
+[Database]
+Server=localhost
+Port=5432
+Timeout=60
 ```
 
 ### 5. Builder Generator
