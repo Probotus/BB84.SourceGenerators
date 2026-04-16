@@ -240,14 +240,14 @@ Generates static `Read` and `Write` methods for classes, enabling compile-time I
 #### Attributes
 
 ```csharp
-[GenerateIniFile]
+[GenerateIniFile(StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)]
 [GenerateIniFileSection(string? name = null)]
 [GenerateIniFileValue(string? name = null)]
 ```
 
 **Parameters:**
 
-- `GenerateIniFile` - Marks a class for INI file code generation
+- `GenerateIniFile` - Marks a class for INI file code generation. The optional `stringComparison` parameter controls how section and key names are compared during deserialization (default: `OrdinalIgnoreCase`)
 - `GenerateIniFileSection` - Marks a property as an INI file section. The optional `name` parameter specifies the section name; if omitted, the property name is used
 - `GenerateIniFileValue` - Marks a property as a key-value pair within an INI section. The optional `name` parameter specifies the key name; if omitted, the property name is used
 
@@ -331,6 +331,19 @@ Debug=False
 Server=localhost
 Port=5432
 Timeout=60
+```
+
+**Case-Sensitive Matching:**
+
+By default, section and key names are compared case-insensitively (`OrdinalIgnoreCase`). To use case-sensitive matching:
+
+```csharp
+[GenerateIniFile(StringComparison.Ordinal)]
+public partial class StrictConfig
+{
+    [GenerateIniFileSection("General")]
+    public GeneralSection General { get; set; }
+}
 ```
 
 ### 5. Builder Generator
