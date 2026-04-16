@@ -388,6 +388,72 @@ public sealed class IniFileGeneratorTests
 		Assert.AreEqual(5, result.General.Version);
 		Assert.IsTrue(result.General.Enabled);
 	}
+
+	[TestMethod]
+	public void ReadShouldIgnoreCaseByDefault()
+	{
+		string content =
+			"[general]\r\n" +
+			"appname=TestApp\r\n" +
+			"version=3\r\n" +
+			"enabled=true\r\n";
+
+		TestIniFile result = TestIniFile.Read(content);
+
+		Assert.IsNotNull(result.General);
+		Assert.AreEqual("TestApp", result.General.AppName);
+		Assert.AreEqual(3, result.General.Version);
+		Assert.IsTrue(result.General.Enabled);
+	}
+
+	[TestMethod]
+	public void ReadShouldRespectCaseSensitiveComparison()
+	{
+		string content =
+			"[General]\r\n" +
+			"AppName=TestApp\r\n" +
+			"Version=3\r\n" +
+			"Enabled=True\r\n";
+
+		TestIniFileCaseSensitive result = TestIniFileCaseSensitive.Read(content);
+
+		Assert.IsNotNull(result.General);
+		Assert.AreEqual("TestApp", result.General.AppName);
+		Assert.AreEqual(3, result.General.Version);
+		Assert.IsTrue(result.General.Enabled);
+	}
+
+	[TestMethod]
+	public void ReadShouldNotMatchWhenCaseSensitiveAndCaseDiffers()
+	{
+		string content =
+			"[general]\r\n" +
+			"appname=TestApp\r\n" +
+			"version=3\r\n" +
+			"enabled=true\r\n";
+
+		TestIniFileCaseSensitive result = TestIniFileCaseSensitive.Read(content);
+
+		Assert.IsNull(result.General);
+	}
+
+	[TestMethod]
+	public void WriteShouldUseInvariantCultureForNumbers()
+	{
+		TestIniFileAllTypes instance = new()
+		{
+			AllTypes = new TestAllTypesSection
+			{
+				FloatValue = 3.14f,
+				DoubleValue = 2.718281828,
+				DecimalValue = 123.456m
+			}
+		};
+		string result = TestIniFileAllTypes.Write(instance);
+		Assert.Contains("FloatValue=3.14", result);
+		Assert.Contains("DoubleValue=2.718281828", result);
+		Assert.Contains("DecimalValue=123.456", result);
+	}
 }
 
 #region Test Types
@@ -493,6 +559,13 @@ public class TestSettingsSection
 {
 	[GenerateIniFileValue]
 	public string Value { get; set; } = "Default";
+}
+
+[GenerateIniFile(StringComparison.Ordinal)]
+internal sealed partial class TestIniFileCaseSensitive
+{
+	[GenerateIniFileSection]
+	public TestGeneralSection? General { get; set; }
 }
 
 #endregion
