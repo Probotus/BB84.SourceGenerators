@@ -69,6 +69,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 		sb.AppendLine("#nullable enable");
 		sb.AppendLine("using System;");
 		sb.AppendLine("using System.Globalization;");
+		sb.AppendLine("using System.Linq;");
 		sb.AppendLine("using System.Text;");
 		sb.AppendLine();
 		sb.AppendLine($"namespace {namespaceName}");
@@ -141,7 +142,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 				string valueElsePrefix = v > 0 ? "else " : "";
 
 				sb.AppendLine($"          {valueElsePrefix}if (string.Equals(key, \"{value.KeyName}\", StringComparison.{stringComparison}))");
-				sb.AppendLine($"            result.{section.PropertyPath}.{value.PropertyName} = {GetParseExpression(value.TypeName, "value")};");
+				sb.AppendLine($"            result.{section.PropertyPath}.{value.PropertyName} = {GetParseExpression(value, "value")};");
 			}
 
 			sb.AppendLine("        }");
@@ -181,7 +182,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 
 			foreach (ValueInfo value in section.Values)
 			{
-				sb.AppendLine($"        sb.AppendLine(\"{value.KeyName}=\" + {GetToStringExpression($"instance.{section.PropertyPath}.{value.PropertyName}", value.TypeName)});");
+				sb.AppendLine($"        sb.AppendLine(\"{value.KeyName}=\" + {GetToStringExpression($"instance.{section.PropertyPath}.{value.PropertyName}", value)});");
 			}
 
 			sb.AppendLine("      }");
@@ -344,10 +345,24 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 				_ => propertySymbol.Type.ToDisplayString()
 			};
 
+			bool isEnum = propertySymbol.Type.TypeKind == TypeKind.Enum;
+			bool isFlagsEnum = false;
+			string? enumFullName = null;
+
+			if (isEnum)
+			{
+				enumFullName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+				isFlagsEnum = propertySymbol.Type.GetAttributes()
+					.Any(a => a.AttributeClass?.ToDisplayString() == "System.FlagsAttribute");
+			}
+
 			values.Add(new ValueInfo(
 				PropertyName: propertySymbol.Name,
 				KeyName: keyName,
-				TypeName: typeName
+				TypeName: typeName,
+				IsEnum: isEnum,
+				IsFlagsEnum: isFlagsEnum,
+				EnumFullName: enumFullName
 			));
 		}
 
@@ -369,9 +384,16 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 		return false;
 	}
 
-	private static string GetParseExpression(string typeName, string variableName)
+	private static string GetParseExpression(ValueInfo value, string variableName)
 	{
-		return typeName switch
+		if (value.IsEnum && value.EnumFullName is not null)
+		{
+			return value.IsFlagsEnum
+				? $"({value.EnumFullName}){variableName}.Split(' ').Select(flag => ({value.EnumFullName})Enum.Parse(typeof({value.EnumFullName}), flag)).Aggregate(0, (current, flag) => current | (int)flag)"
+				: $"({value.EnumFullName})Enum.Parse(typeof({value.EnumFullName}), {variableName})";
+		}
+
+		return value.TypeName switch
 		{
 			"string" => variableName,
 			"int" => $"int.Parse({variableName}, CultureInfo.InvariantCulture)",
@@ -385,9 +407,16 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 		};
 	}
 
-	private static string GetToStringExpression(string expression, string typeName)
+	private static string GetToStringExpression(string expression, ValueInfo value)
 	{
-		return typeName switch
+		if (value.IsEnum && value.EnumFullName is not null)
+		{
+			return value.IsFlagsEnum
+				? $"string.Join(\" \", Enum.GetValues(typeof({value.EnumFullName})).Cast<{value.EnumFullName}>().Where(flag => flag != 0 && {expression}.HasFlag(flag)).Select(flag => flag.ToString()))"
+				: $"{expression}.ToString()";
+		}
+
+		return value.TypeName switch
 		{
 			"string" => expression,
 			"bool" => $"{expression}.ToString()",
@@ -489,6 +518,9 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 	private sealed record ValueInfo(
 		string PropertyName,
 		string KeyName,
-		string TypeName
+		string TypeName,
+		bool IsEnum = false,
+		bool IsFlagsEnum = false,
+		string? EnumFullName = null
 	);
 }

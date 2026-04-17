@@ -527,6 +527,85 @@ public sealed class IniFileGeneratorTests
 		Assert.Contains("[Section/SubSection]", result);
 		Assert.DoesNotContain("[Section.SubSection]", result);
 	}
+	[TestMethod]
+	public void ReadShouldHandleEnumValues()
+	{
+		string content = "[App]\r\nLevel=Warning\r\n";
+
+		TestIniFileWithEnums result = TestIniFileWithEnums.Read(content);
+
+		Assert.IsNotNull(result.App);
+		Assert.AreEqual(TestLogLevel.Warning, result.App.Level);
+	}
+
+	[TestMethod]
+	public void WriteShouldHandleEnumValues()
+	{
+		TestIniFileWithEnums instance = new()
+		{
+			App = new TestAppSection { Level = TestLogLevel.Error }
+		};
+
+		string result = TestIniFileWithEnums.Write(instance);
+
+		Assert.Contains("[App]", result);
+		Assert.Contains("Level=Error", result);
+	}
+
+	[TestMethod]
+	public void ReadShouldHandleFlagsEnumValues()
+	{
+		string content = "[App]\r\nPerms=Read Execute\r\n";
+
+		TestIniFileWithFlagsEnum result = TestIniFileWithFlagsEnum.Read(content);
+
+		Assert.IsNotNull(result.App);
+		Assert.AreEqual(TestPermissions.Read | TestPermissions.Execute, result.App.Perms);
+	}
+
+	[TestMethod]
+	public void WriteShouldHandleFlagsEnumValues()
+	{
+		TestIniFileWithFlagsEnum instance = new()
+		{
+			App = new TestFlagsAppSection { Perms = TestPermissions.Read | TestPermissions.Write }
+		};
+
+		string result = TestIniFileWithFlagsEnum.Write(instance);
+
+		Assert.Contains("[App]", result);
+		Assert.Contains("Perms=Read Write", result);
+	}
+
+	[TestMethod]
+	public void ReadThenWriteShouldRoundTripEnumValues()
+	{
+		TestIniFileWithEnums original = new()
+		{
+			App = new TestAppSection { Level = TestLogLevel.Info }
+		};
+
+		string serialized = TestIniFileWithEnums.Write(original);
+		TestIniFileWithEnums deserialized = TestIniFileWithEnums.Read(serialized);
+
+		Assert.IsNotNull(deserialized.App);
+		Assert.AreEqual(original.App.Level, deserialized.App.Level);
+	}
+
+	[TestMethod]
+	public void ReadThenWriteShouldRoundTripFlagsEnumValues()
+	{
+		TestIniFileWithFlagsEnum original = new()
+		{
+			App = new TestFlagsAppSection { Perms = TestPermissions.Read | TestPermissions.Execute }
+		};
+
+		string serialized = TestIniFileWithFlagsEnum.Write(original);
+		TestIniFileWithFlagsEnum deserialized = TestIniFileWithFlagsEnum.Read(serialized);
+
+		Assert.IsNotNull(deserialized.App);
+		Assert.AreEqual(original.App.Perms, deserialized.App.Perms);
+	}
 }
 
 #region Test Types
@@ -667,6 +746,37 @@ internal sealed partial class TestIniFileWithCustomDelimiter
 {
 	[GenerateIniFileSection]
 	public TestSection Section { get; set; } = new TestSection();
+}
+
+public enum TestLogLevel { Debug, Info, Warning, Error }
+
+[Flags]
+public enum TestPermissions { None = 0, Read = 1, Write = 2, Execute = 4 }
+
+[GenerateIniFile]
+internal sealed partial class TestIniFileWithEnums
+{
+	[GenerateIniFileSection]
+	public TestAppSection? App { get; set; }
+}
+
+public class TestAppSection
+{
+	[GenerateIniFileValue]
+	public TestLogLevel Level { get; set; }
+}
+
+[GenerateIniFile]
+internal sealed partial class TestIniFileWithFlagsEnum
+{
+	[GenerateIniFileSection]
+	public TestFlagsAppSection? App { get; set; }
+}
+
+public class TestFlagsAppSection
+{
+	[GenerateIniFileValue]
+	public TestPermissions Perms { get; set; }
 }
 
 #endregion
