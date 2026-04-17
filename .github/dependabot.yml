@@ -9,7 +9,16 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    assignees:
+      - "BoBoBaSs84"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    assignees:
+      - "BoBoBaSs84"
