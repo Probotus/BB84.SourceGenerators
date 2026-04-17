@@ -27,6 +27,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 	private static readonly string GeneratorAttributeName = typeof(GenerateIniFileAttribute).FullName;
 	private static readonly string SectionAttributeName = typeof(GenerateIniFileSectionAttribute).FullName;
 	private static readonly string ValueAttributeName = typeof(GenerateIniFileValueAttribute).FullName;
+	private static readonly string[] LineBreakSeparators = ["\r\n", "\n"];
 
 	/// <inheritdoc/>
 	public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -60,7 +61,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 		string accessibility = GetAccessibility(classDeclaration);
 		string stringComparison = GetStringComparison(classDeclaration, semanticModel);
 		string sectionDelimiter = GetSectionDelimiter(classDeclaration, semanticModel);
-		bool serializeComments = GetSerializeComments(classDeclaration, semanticModel);
+		bool serializeComments = GetSerializeComments(classDeclaration);
 
 		List<SectionInfo> sections = GetSections(classDeclaration, semanticModel, sectionDelimiter, serializeComments);
 
@@ -489,7 +490,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 		return ".";
 	}
 
-	private static bool GetSerializeComments(ClassDeclarationSyntax classDeclaration, SemanticModel semanticModel)
+	private static bool GetSerializeComments(ClassDeclarationSyntax classDeclaration)
 	{
 		foreach (AttributeListSyntax attributeList in classDeclaration.AttributeLists)
 		{
@@ -506,11 +507,11 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 				foreach (AttributeArgumentSyntax argument in attribute.ArgumentList.Arguments)
 				{
 					if (argument.NameEquals?.Name.Identifier.Text == "SerializeComments")
-						{
-							string expressionText = argument.Expression.ToString();
-							if (expressionText == "true")
-								return true;
-						}
+					{
+						string expressionText = argument.Expression.ToString();
+						if (expressionText == "true")
+							return true;
+					}
 				}
 			}
 		}
@@ -544,7 +545,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 							continue;
 
 						string content = xmlElement.Content.ToString();
-						string[] lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+						string[] lines = content.Split(LineBreakSeparators, StringSplitOptions.RemoveEmptyEntries);
 
 						List<string> cleanLines = [];
 						foreach (string line in lines)
