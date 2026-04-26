@@ -7,6 +7,7 @@ using System.Text;
 
 using BB84.SourceGenerators.Attributes;
 using BB84.SourceGenerators.Extensions;
+using BB84.SourceGenerators.Helpers;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -46,14 +47,11 @@ public sealed class AssemblyInformationGenerator : IIncrementalGenerator
 				.ForAttributeWithMetadataName(
 					fullyQualifiedMetadataName: GeneratorAttributeName,
 					predicate: static (node, _) => node is ClassDeclarationSyntax,
-					transform: static (ctx, _) => Transform(ctx))
+					transform: static (ctx, _) => GeneratorHelpers.TransformClassSyntax(ctx))
 				.Where(static result => result is not null);
 
 		context.RegisterSourceOutput(provider, Execute);
 	}
-
-	private static (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? Transform(GeneratorAttributeSyntaxContext context)
-		=> context.TargetNode is not ClassDeclarationSyntax classSyntax ? null : ((ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)?)(classSyntax, context.SemanticModel);
 
 	private void Execute(SourceProductionContext context, (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? input)
 	{
@@ -69,11 +67,11 @@ public sealed class AssemblyInformationGenerator : IIncrementalGenerator
 
 		string className = classSymbol.Name;
 		string namespaceName = classDeclaration.GetNamespace();
-		string accessibility = GetAccessibility(classDeclaration);
+		string accessibility = GeneratorHelpers.GetAccessibility(classDeclaration);
 
 		Dictionary<string, string> assemblyValues = GetAssemblyAttributeValues(semanticModel.Compilation);
 
-		List<(string Accessibility, string Name)> outerClasses = GetOuterClasses(classDeclaration);
+		List<(string Accessibility, string Name)> outerClasses = GeneratorHelpers.GetOuterClasses(classDeclaration);
 
 		StringBuilder sb = new();
 
@@ -153,33 +151,5 @@ public sealed class AssemblyInformationGenerator : IIncrementalGenerator
 		}
 
 		return values;
-	}
-
-	private static string GetAccessibility(ClassDeclarationSyntax classDeclaration)
-	{
-		foreach (SyntaxToken modifier in classDeclaration.Modifiers)
-		{
-			if (modifier.IsKind(SyntaxKind.PublicKeyword))
-				return "public";
-			if (modifier.IsKind(SyntaxKind.InternalKeyword))
-				return "internal";
-		}
-
-		return "internal";
-	}
-
-	private static List<(string Accessibility, string Name)> GetOuterClasses(ClassDeclarationSyntax classDeclaration)
-	{
-		List<(string Accessibility, string Name)> outerClasses = [];
-		SyntaxNode? parent = classDeclaration.Parent;
-
-		while (parent is ClassDeclarationSyntax outerClass)
-		{
-			outerClasses.Add((GetAccessibility(outerClass), outerClass.Identifier.Text));
-			parent = outerClass.Parent;
-		}
-
-		outerClasses.Reverse();
-		return outerClasses;
 	}
 }
