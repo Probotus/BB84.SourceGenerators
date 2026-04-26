@@ -645,6 +645,133 @@ namespace TestNamespace
 		Assert.Contains("DoSecond()", generated);
 	}
 
+	[TestMethod]
+	public void FactoryGeneratorShouldGenerateSource()
+	{
+		string source = @"
+using BB84.SourceGenerators.Attributes;
+
+namespace TestNamespace
+{
+	public interface IAnimal { }
+
+	public class Dog : IAnimal { }
+	public class Cat : IAnimal { }
+
+	[GenerateFactory(typeof(IAnimal))]
+	public static partial class AnimalFactory
+	{
+	}
+}";
+
+		(ImmutableArray<Diagnostic> diagnostics, string[] generatedSources) = RunGenerator<FactoryGenerator>(source);
+
+		Assert.IsEmpty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+		Assert.IsNotEmpty(generatedSources);
+		string generated = generatedSources.First(s => s.Contains("partial class AnimalFactory"));
+		Assert.Contains("Create(string key)", generated);
+		Assert.Contains("Dog", generated);
+		Assert.Contains("Cat", generated);
+		Assert.Contains("GetKeys()", generated);
+	}
+
+	[TestMethod]
+	public void FactoryGeneratorShouldUseCustomKey()
+	{
+		string source = @"
+using BB84.SourceGenerators.Attributes;
+
+namespace TestNamespace
+{
+	public interface IVehicle { }
+
+	[GenerateFactoryKey(""sedan"")]
+	public class Car : IVehicle { }
+
+	[GenerateFactory(typeof(IVehicle))]
+	public static partial class VehicleFactory
+	{
+	}
+}";
+
+		(ImmutableArray<Diagnostic> diagnostics, string[] generatedSources) = RunGenerator<FactoryGenerator>(source);
+
+		Assert.IsEmpty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+		Assert.IsNotEmpty(generatedSources);
+		string generated = generatedSources.First(s => s.Contains("partial class VehicleFactory"));
+		Assert.Contains("sedan", generated);
+	}
+
+	[TestMethod]
+	public void FactoryGeneratorShouldReportDiagnosticForNonInterfaceType()
+	{
+		string source = @"
+using BB84.SourceGenerators.Attributes;
+
+namespace TestNamespace
+{
+	public class NotAnInterface { }
+
+	[GenerateFactory(typeof(NotAnInterface))]
+	public static partial class BadFactory
+	{
+	}
+}";
+
+		(ImmutableArray<Diagnostic> diagnostics, string[] generatedSources) = RunGenerator<FactoryGenerator>(source);
+
+		Assert.IsNotEmpty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id == "BB84SG0004"));
+	}
+
+	[TestMethod]
+	public void FactoryGeneratorShouldReportDiagnosticForDuplicateKeys()
+	{
+		string source = @"
+using BB84.SourceGenerators.Attributes;
+
+namespace TestNamespace
+{
+	public interface IService { }
+
+	[GenerateFactoryKey(""same"")]
+	public class ServiceA : IService { }
+
+	[GenerateFactoryKey(""same"")]
+	public class ServiceB : IService { }
+
+	[GenerateFactory(typeof(IService))]
+	public static partial class ServiceFactory
+	{
+	}
+}";
+
+		(ImmutableArray<Diagnostic> diagnostics, string[] generatedSources) = RunGenerator<FactoryGenerator>(source);
+
+		Assert.IsNotEmpty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id == "BB84SG0005"));
+	}
+
+	[TestMethod]
+	public void FactoryGeneratorNoImplementationsShouldGenerateSource()
+	{
+		string source = @"
+using BB84.SourceGenerators.Attributes;
+
+namespace TestNamespace
+{
+	public interface IEmpty { }
+
+	[GenerateFactory(typeof(IEmpty))]
+	public static partial class EmptyFactory
+	{
+	}
+}";
+
+		(ImmutableArray<Diagnostic> diagnostics, string[] generatedSources) = RunGenerator<FactoryGenerator>(source);
+
+		Assert.IsEmpty(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+		Assert.IsNotEmpty(generatedSources);
+	}
+
 	private static (ImmutableArray<Diagnostic> Diagnostics, string[] GeneratedSources) RunGenerator<TGenerator>(string source)
 		where TGenerator : IIncrementalGenerator, new()
 	{
