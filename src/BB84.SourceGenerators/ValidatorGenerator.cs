@@ -9,6 +9,7 @@ using System.Text;
 using BB84.SourceGenerators.Analyzers;
 using BB84.SourceGenerators.Attributes;
 using BB84.SourceGenerators.Extensions;
+using BB84.SourceGenerators.Helpers;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -27,13 +28,6 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 	private static readonly string GeneratorName = typeof(ValidatorGenerator).FullName;
 	private static readonly string GeneratorAttributeName = typeof(GenerateValidatorAttribute).FullName;
 
-	private const string RequiredAttributeName = "System.ComponentModel.DataAnnotations.RequiredAttribute";
-	private const string RangeAttributeName = "System.ComponentModel.DataAnnotations.RangeAttribute";
-	private const string StringLengthAttributeName = "System.ComponentModel.DataAnnotations.StringLengthAttribute";
-	private const string MinLengthAttributeName = "System.ComponentModel.DataAnnotations.MinLengthAttribute";
-	private const string MaxLengthAttributeName = "System.ComponentModel.DataAnnotations.MaxLengthAttribute";
-	private const string RegularExpressionAttributeName = "System.ComponentModel.DataAnnotations.RegularExpressionAttribute";
-
 	/// <inheritdoc/>
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
@@ -42,15 +36,10 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 				.ForAttributeWithMetadataName(
 					fullyQualifiedMetadataName: GeneratorAttributeName,
 					predicate: static (node, _) => node is ClassDeclarationSyntax,
-					transform: static (ctx, _) => Transform(ctx))
+					transform: static (ctx, _) => GeneratorHelpers.TransformClassSyntax(ctx))
 				.Where(static result => result is not null);
 
 		context.RegisterSourceOutput(provider, Execute);
-	}
-
-	private static (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? Transform(GeneratorAttributeSyntaxContext context)
-	{
-		return context.TargetNode is not ClassDeclarationSyntax classSyntax ? null : ((ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)?)(classSyntax, context.SemanticModel);
 	}
 
 	private void Execute(SourceProductionContext context, (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? input)
@@ -74,11 +63,11 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 
 		string className = classSymbol.Name;
 		string namespaceName = classDeclaration.GetNamespace();
-		string accessibility = GetAccessibility(classDeclaration);
+		string accessibility = GeneratorHelpers.GetAccessibility(classDeclaration);
 
 		ImmutableArray<PropertyValidationInfo> validatedProperties = GetValidatedProperties(classSymbol);
 
-		List<(string Accessibility, string Name)> outerClasses = GetOuterClasses(classDeclaration);
+		List<(string Accessibility, string Name)> outerClasses = GeneratorHelpers.GetOuterClasses(classDeclaration);
 
 		StringBuilder sb = new();
 
@@ -261,9 +250,9 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 
 	private static void AppendRegularExpressionValidation(StringBuilder sb, string propertyName, ValidationRule rule, string bodyIndent)
 	{
-		string message = rule.ErrorMessage ?? $"The field {propertyName} must match the regular expression '{EscapeString(rule.Pattern!)}'.";
+		string message = rule.ErrorMessage ?? $"The field {propertyName} must match the regular expression '{GeneratorHelpers.EscapeString(rule.Pattern!)}'.";
 
-		sb.AppendLine($"{bodyIndent}if ({propertyName} != null && !Regex.IsMatch({propertyName}, @\"{EscapeVerbatimString(rule.Pattern!)}\"))");
+		sb.AppendLine($"{bodyIndent}if ({propertyName} != null && !Regex.IsMatch({propertyName}, @\"{GeneratorHelpers.EscapeVerbatimString(rule.Pattern!)}\"))");
 		AppendAddError(sb, propertyName, message, bodyIndent);
 	}
 
@@ -272,7 +261,7 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 		sb.AppendLine($"{bodyIndent}{{");
 		sb.AppendLine($"{bodyIndent}  if (!errors.ContainsKey(\"{propertyName}\"))");
 		sb.AppendLine($"{bodyIndent}    errors[\"{propertyName}\"] = new List<string>();");
-		sb.AppendLine($"{bodyIndent}  errors[\"{propertyName}\"].Add(\"{EscapeString(message)}\");");
+		sb.AppendLine($"{bodyIndent}  errors[\"{propertyName}\"].Add(\"{GeneratorHelpers.EscapeString(message)}\");");
 		sb.AppendLine($"{bodyIndent}}}");
 	}
 
@@ -318,12 +307,12 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 
 				ValidationRule? rule = attributeName switch
 				{
-					RequiredAttributeName => ParseRequiredAttribute(attribute),
-					RangeAttributeName => ParseRangeAttribute(attribute),
-					StringLengthAttributeName => ParseStringLengthAttribute(attribute),
-					MinLengthAttributeName => ParseMinLengthAttribute(attribute),
-					MaxLengthAttributeName => ParseMaxLengthAttribute(attribute),
-					RegularExpressionAttributeName => ParseRegularExpressionAttribute(attribute),
+					DataAnnotationNames.Required => ParseRequiredAttribute(attribute),
+					DataAnnotationNames.Range => ParseRangeAttribute(attribute),
+					DataAnnotationNames.StringLength => ParseStringLengthAttribute(attribute),
+					DataAnnotationNames.MinLength => ParseMinLengthAttribute(attribute),
+					DataAnnotationNames.MaxLength => ParseMaxLengthAttribute(attribute),
+					DataAnnotationNames.RegularExpression => ParseRegularExpressionAttribute(attribute),
 					_ => null
 				};
 
@@ -448,34 +437,6 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 		return default;
 	}
 
-	private static string GetAccessibility(ClassDeclarationSyntax classDeclaration)
-	{
-		foreach (SyntaxToken modifier in classDeclaration.Modifiers)
-		{
-			if (modifier.IsKind(SyntaxKind.PublicKeyword))
-				return "public";
-			if (modifier.IsKind(SyntaxKind.InternalKeyword))
-				return "internal";
-		}
-
-		return "internal";
-	}
-
-	private static List<(string Accessibility, string Name)> GetOuterClasses(ClassDeclarationSyntax classDeclaration)
-	{
-		List<(string Accessibility, string Name)> outerClasses = [];
-		SyntaxNode? parent = classDeclaration.Parent;
-
-		while (parent is ClassDeclarationSyntax outerClass)
-		{
-			outerClasses.Add((GetAccessibility(outerClass), outerClass.Identifier.Text));
-			parent = outerClass.Parent;
-		}
-
-		outerClasses.Reverse();
-		return outerClasses;
-	}
-
 	private static bool IsCollectionType(ITypeSymbol type)
 	{
 		if (type.TypeKind == TypeKind.Array)
@@ -492,12 +453,6 @@ public sealed class ValidatorGenerator : IIncrementalGenerator
 
 		return type is INamedTypeSymbol namedType && namedType.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T;
 	}
-
-	private static string EscapeString(string value)
-		=> value.Replace("\\", "\\\\").Replace("\"", "\\\"");
-
-	private static string EscapeVerbatimString(string value)
-		=> value.Replace("\"", "\"\"");
 
 	private enum ValidationKind
 	{

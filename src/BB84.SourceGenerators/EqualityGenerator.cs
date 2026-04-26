@@ -8,6 +8,7 @@ using System.Text;
 
 using BB84.SourceGenerators.Attributes;
 using BB84.SourceGenerators.Extensions;
+using BB84.SourceGenerators.Helpers;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -35,14 +36,11 @@ public sealed class EqualityGenerator : IIncrementalGenerator
 				.ForAttributeWithMetadataName(
 					fullyQualifiedMetadataName: GeneratorAttributeName,
 					predicate: static (node, _) => node is ClassDeclarationSyntax,
-					transform: static (ctx, _) => Transform(ctx))
+					transform: static (ctx, _) => GeneratorHelpers.TransformClassSyntax(ctx))
 				.Where(static result => result is not null);
 
 		context.RegisterSourceOutput(provider, Execute);
 	}
-
-	private static (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? Transform(GeneratorAttributeSyntaxContext context)
-		=> context.TargetNode is not ClassDeclarationSyntax classSyntax ? null : ((ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)?)(classSyntax, context.SemanticModel);
 
 	private void Execute(SourceProductionContext context, (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? input)
 	{
@@ -58,9 +56,9 @@ public sealed class EqualityGenerator : IIncrementalGenerator
 
 		string className = classSymbol.Name;
 		string namespaceName = classDeclaration.GetNamespace();
-		string accessibility = GetAccessibility(classDeclaration);
+		string accessibility = GeneratorHelpers.GetAccessibility(classDeclaration);
 
-		HashSet<string> excludedProperties = GetExcludedProperties(classDeclaration, semanticModel);
+		HashSet<string> excludedProperties = GeneratorHelpers.GetExcludedProperties(classDeclaration, semanticModel, "GenerateEquality", "GenerateEqualityAttribute");
 		ImmutableArray<PropertyInfo> properties = GetPublicProperties(classSymbol, excludedProperties);
 
 		StringBuilder sb = new();
@@ -214,48 +212,6 @@ public sealed class EqualityGenerator : IIncrementalGenerator
 		}
 
 		return builder.ToImmutable();
-	}
-
-	private static HashSet<string> GetExcludedProperties(ClassDeclarationSyntax classDeclaration, SemanticModel semanticModel)
-	{
-		HashSet<string> excluded = new(StringComparer.Ordinal);
-
-		foreach (AttributeListSyntax attributeList in classDeclaration.AttributeLists)
-		{
-			foreach (AttributeSyntax attribute in attributeList.Attributes)
-			{
-				string name = attribute.Name.ToString();
-
-				if (name is not "GenerateEquality" and not "GenerateEqualityAttribute")
-					continue;
-
-				if (attribute.ArgumentList is null)
-					continue;
-
-				foreach (AttributeArgumentSyntax argument in attribute.ArgumentList.Arguments)
-				{
-					Optional<object?> constantValue = semanticModel.GetConstantValue(argument.Expression);
-
-					if (constantValue.HasValue && constantValue.Value is string value)
-						excluded.Add(value);
-				}
-			}
-		}
-
-		return excluded;
-	}
-
-	private static string GetAccessibility(ClassDeclarationSyntax classDeclaration)
-	{
-		foreach (SyntaxToken modifier in classDeclaration.Modifiers)
-		{
-			if (modifier.IsKind(SyntaxKind.PublicKeyword))
-				return "public";
-			if (modifier.IsKind(SyntaxKind.InternalKeyword))
-				return "internal";
-		}
-
-		return "internal";
 	}
 
 	private readonly struct PropertyInfo(string name, bool isValueType)

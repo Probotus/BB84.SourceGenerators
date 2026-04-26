@@ -7,6 +7,7 @@ using System.Text;
 
 using BB84.SourceGenerators.Attributes;
 using BB84.SourceGenerators.Extensions;
+using BB84.SourceGenerators.Helpers;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -37,15 +38,10 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 				.ForAttributeWithMetadataName(
 					fullyQualifiedMetadataName: GeneratorAttributeName,
 					predicate: static (node, _) => node is ClassDeclarationSyntax,
-					transform: static (ctx, _) => Transform(ctx))
+					transform: static (ctx, _) => GeneratorHelpers.TransformClassSyntax(ctx))
 				.Where(static result => result is not null);
 
 		context.RegisterSourceOutput(provider, Execute);
-	}
-
-	private static (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? Transform(GeneratorAttributeSyntaxContext context)
-	{
-		return context.TargetNode is not ClassDeclarationSyntax classSyntax ? null : ((ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)?)(classSyntax, context.SemanticModel);
 	}
 
 	private void Execute(SourceProductionContext context, (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? input)
@@ -58,7 +54,7 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 
 		string className = classDeclaration.Identifier.Text;
 		string namespaceName = classDeclaration.GetNamespace();
-		string accessibility = GetAccessibility(classDeclaration);
+		string accessibility = GeneratorHelpers.GetAccessibility(classDeclaration);
 		string stringComparison = GetStringComparison(classDeclaration, semanticModel);
 		string sectionDelimiter = GetSectionDelimiter(classDeclaration, semanticModel);
 		bool serializeComments = GetSerializeComments(classDeclaration);
@@ -182,14 +178,14 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 			sb.AppendLine("      {");
 
 			if (serializeComments && section.Comment is not null)
-				sb.AppendLine($"        sb.AppendLine(\"; {EscapeString(section.Comment)}\");");
+				sb.AppendLine($"        sb.AppendLine(\"; {GeneratorHelpers.EscapeString(section.Comment)}\");");
 
 			sb.AppendLine($"        sb.AppendLine(\"[{section.SectionName}]\");");
 
 			foreach (ValueInfo value in section.Values)
 			{
 				if (serializeComments && value.Comment is not null)
-					sb.AppendLine($"        sb.AppendLine(\"; {EscapeString(value.Comment)}\");");
+					sb.AppendLine($"        sb.AppendLine(\"; {GeneratorHelpers.EscapeString(value.Comment)}\");");
 
 				sb.AppendLine($"        sb.AppendLine(\"{value.KeyName}=\" + {GetToStringExpression($"instance.{section.PropertyPath}.{value.PropertyName}", value)});");
 			}
@@ -565,9 +561,6 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 		return null;
 	}
 
-	private static string EscapeString(string value)
-		=> value.Replace("\\", "\\\\").Replace("\"", "\\\"");
-
 	private static string BuildNullCheck(string propertyPath)
 	{
 		string[] segments = propertyPath.Split('.');
@@ -581,23 +574,6 @@ public sealed class IniFileGenerator : IIncrementalGenerator
 		}
 
 		return string.Join(" && ", checks);
-	}
-
-	private static string GetAccessibility(ClassDeclarationSyntax classDeclaration)
-	{
-		foreach (SyntaxToken modifier in classDeclaration.Modifiers)
-		{
-			if (modifier.IsKind(SyntaxKind.PublicKeyword))
-				return "public";
-			if (modifier.IsKind(SyntaxKind.InternalKeyword))
-				return "internal";
-			if (modifier.IsKind(SyntaxKind.ProtectedKeyword))
-				return "protected";
-			if (modifier.IsKind(SyntaxKind.PrivateKeyword))
-				return "private";
-		}
-
-		return "internal";
 	}
 
 	private sealed record SectionInfo(

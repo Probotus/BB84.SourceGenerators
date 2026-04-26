@@ -8,6 +8,7 @@ using System.Text;
 
 using BB84.SourceGenerators.Attributes;
 using BB84.SourceGenerators.Extensions;
+using BB84.SourceGenerators.Helpers;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -33,18 +34,10 @@ public sealed class BuilderGenerator : IIncrementalGenerator
 				.ForAttributeWithMetadataName(
 					fullyQualifiedMetadataName: GeneratorAttributeName,
 					predicate: static (node, _) => node is ClassDeclarationSyntax,
-					transform: static (ctx, _) => Transform(ctx))
+					transform: static (ctx, _) => GeneratorHelpers.TransformClassSyntax(ctx))
 				.Where(static result => result is not null);
 
 		context.RegisterSourceOutput(provider, Execute);
-	}
-
-	private static (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? Transform(GeneratorAttributeSyntaxContext context)
-	{
-		if (context.TargetNode is not ClassDeclarationSyntax classSyntax)
-			return null;
-
-		return (classSyntax, context.SemanticModel);
 	}
 
 	private void Execute(SourceProductionContext context, (ClassDeclarationSyntax ClassSyntax, SemanticModel SemanticModel)? input)
@@ -61,7 +54,7 @@ public sealed class BuilderGenerator : IIncrementalGenerator
 
 		string className = classSymbol.Name;
 		string namespaceName = classDeclaration.GetNamespace();
-		string accessibility = GetAccessibility(classDeclaration);
+		string accessibility = GeneratorHelpers.GetAccessibility(classDeclaration);
 		string builderClassName = $"{className}Builder";
 
 		ImmutableArray<PropertyInfo> properties = GetSettableProperties(classSymbol);
@@ -172,32 +165,11 @@ public sealed class BuilderGenerator : IIncrementalGenerator
 		return builder.ToImmutable();
 	}
 
-	private static string GetAccessibility(ClassDeclarationSyntax classDeclaration)
+	private readonly struct PropertyInfo(string name, string typeName, bool isReferenceType, bool isNullable)
 	{
-		foreach (SyntaxToken modifier in classDeclaration.Modifiers)
-		{
-			if (modifier.IsKind(SyntaxKind.PublicKeyword))
-				return "public";
-			if (modifier.IsKind(SyntaxKind.InternalKeyword))
-				return "internal";
-		}
-
-		return "internal";
-	}
-
-	private readonly struct PropertyInfo
-	{
-		public PropertyInfo(string name, string typeName, bool isReferenceType, bool isNullable)
-		{
-			Name = name;
-			TypeName = typeName;
-			IsReferenceType = isReferenceType;
-			IsNullable = isNullable;
-		}
-
-		public string Name { get; }
-		public string TypeName { get; }
-		public bool IsReferenceType { get; }
-		public bool IsNullable { get; }
+		public string Name { get; } = name;
+		public string TypeName { get; } = typeName;
+		public bool IsReferenceType { get; } = isReferenceType;
+		public bool IsNullable { get; } = isNullable;
 	}
 }
