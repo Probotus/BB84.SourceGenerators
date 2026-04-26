@@ -28,13 +28,13 @@ internal static class AttributeSourceRewriter
 	/// </summary>
 	private static readonly Dictionary<string, string> KnownTypeReplacements = new()
 	{
-		["Type"] = "global::System.Type",
-		["Attribute"] = "global::System.Attribute",
-		["AttributeUsage"] = "global::System.AttributeUsage",
-		["AttributeUsageAttribute"] = "global::System.AttributeUsageAttribute",
-		["AttributeTargets"] = "global::System.AttributeTargets",
-		["INotifyPropertyChanging"] = "global::System.ComponentModel.INotifyPropertyChanging",
-		["INotifyPropertyChanged"] = "global::System.ComponentModel.INotifyPropertyChanged",
+		["Type"] = "System.Type",
+		["Attribute"] = "System.Attribute",
+		["AttributeUsage"] = "System.AttributeUsage",
+		["AttributeUsageAttribute"] = "System.AttributeUsageAttribute",
+		["AttributeTargets"] = "System.AttributeTargets",
+		["INotifyPropertyChanging"] = "System.ComponentModel.INotifyPropertyChanging",
+		["INotifyPropertyChanged"] = "System.ComponentModel.INotifyPropertyChanged",
 	};
 
 	/// <summary>
@@ -61,19 +61,22 @@ internal static class AttributeSourceRewriter
 		SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
 		CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
 
-		HashSet<string> importedNames = [];
+		// Always register System types for fully-qualified replacement.
+		// These types may be available via implicit usings (no explicit 'using System;')
+		// but must still be fully qualified in emitted source since all usings are stripped.
+		HashSet<string> importedNames =
+		[
+			"Type",
+			"Attribute",
+			"AttributeUsage",
+			"AttributeUsageAttribute",
+			"AttributeTargets",
+		];
+
 		foreach (UsingDirectiveSyntax usingDirective in root.Usings)
 		{
 			string ns = usingDirective.Name?.ToString() ?? string.Empty;
-			if (ns.Equals("System", StringComparison.Ordinal))
-			{
-				importedNames.Add("Type");
-				importedNames.Add("Attribute");
-				importedNames.Add("AttributeUsage");
-				importedNames.Add("AttributeUsageAttribute");
-				importedNames.Add("AttributeTargets");
-			}
-			else if (ns.Equals("System.ComponentModel", StringComparison.Ordinal))
+			if (ns.Equals("System.ComponentModel", StringComparison.Ordinal))
 			{
 				importedNames.Add("INotifyPropertyChanging");
 				importedNames.Add("INotifyPropertyChanged");

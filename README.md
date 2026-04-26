@@ -18,20 +18,21 @@ A collection of C# source generators that automatically generate boilerplate cod
 
 ## Features
 
-This package provides twelve powerful source generators:
+This package provides thirteen powerful source generators:
 
-- **Enumerator Extensions Generator** - Fast, allocation-free extension methods for enums
-- **Notification Properties Generator** - Automatic INotifyPropertyChanged/INotifyPropertyChanging implementation
 - **Abstraction Generator** - Interface and implementation generation for static classes
-- **INI File Generator** - Compile-time INI file serialization and deserialization
+- **Assembly Information Generator** - Compile-time assembly metadata constants without reflection
 - **Builder Generator** - Fluent builder pattern generation for classes
+- **Cloneable Generator** - Compile-time `Clone()` and `DeepClone()` method generation
+- **Decorator Generator** - Compile-time decorator pattern generation with full interface delegation
+- **Enumerator Extensions Generator** - Fast, allocation-free extension methods for enums
+- **Equality Generator** - Compile-time `Equals`, `GetHashCode`, and operator generation
+- **Factory Generator** - Compile-time factory pattern generation with automatic implementation discovery
+- **INI File Generator** - Compile-time INI file serialization and deserialization
+- **Notification Properties Generator** - Automatic INotifyPropertyChanged/INotifyPropertyChanging implementation
+- **Singleton Generator** - Thread-safe singleton pattern generation with lazy or eager initialization
 - **ToString Generator** - Compile-time `ToString()` override generation
 - **Validator Generator** - Compile-time data annotation validation
-- **Equality Generator** - Compile-time `Equals`, `GetHashCode`, and operator generation
-- **Cloneable Generator** - Compile-time `Clone()` and `DeepClone()` method generation
-- **Assembly Information Generator** - Compile-time assembly metadata constants without reflection
-- **Singleton Generator** - Thread-safe singleton pattern generation with lazy or eager initialization
-- **Decorator Generator** - Compile-time decorator pattern generation with full interface delegation
 
 ## Installation
 
@@ -1007,88 +1008,6 @@ public partial class MyCache
 }
 ```
 
-### 11. Singleton Generator
-
-Generates the singleton pattern for classes, providing a static `Instance` property and a private constructor. Supports thread-safe lazy initialization via `Lazy<T>` (default) or simple static field initialization. When the class implements an interface, the `Instance` property is typed as the interface.
-
-#### Attribute
-
-```csharp
-[GenerateSingleton(bool useLazy = true)]
-```
-
-**Parameters:**
-
-- `useLazy` - When `true` (default), the singleton is backed by `Lazy<T>` for thread-safe lazy initialization. When `false`, a simple static readonly field is used instead.
-
-**Constraints:**
-
-- The attribute cannot be applied to classes with `required` fields or properties. A compile-time error (`BB84SG0002`) will be emitted if the class contains any required members that prevent parameterless initialization.
-
-#### Example
-
-```csharp
-using BB84.SourceGenerators.Attributes;
-
-// Lazy singleton (default)
-[GenerateSingleton]
-public partial class MyService { }
-
-// Non-lazy singleton
-[GenerateSingleton(useLazy: false)]
-public partial class MyCache { }
-
-// Singleton with interface
-[GenerateSingleton]
-internal partial class MyService : IMyService { }
-```
-
-#### Generated Code (Lazy, no interface)
-
-```csharp
-public partial class MyService
-{
-    private static readonly Lazy<MyService> _lazyInstance = new Lazy<MyService>(() => new MyService());
-
-    /// <summary>
-    /// Gets the singleton instance of <see cref="MyService"/>.
-    /// </summary>
-    public static MyService Instance => _lazyInstance.Value;
-
-    private MyService() { }
-}
-```
-
-#### Generated Code (Lazy, with interface)
-
-```csharp
-internal partial class MyService
-{
-    private static readonly Lazy<MyService> _lazyInstance = new Lazy<MyService>(() => new MyService());
-
-    /// <summary>
-    /// Gets the singleton instance of <see cref="MyService"/> as <see cref="IMyService"/>.
-    /// </summary>
-    public static IMyService Instance => _lazyInstance.Value;
-
-    private MyService() { }
-}
-```
-
-#### Generated Code (Non-lazy, no interface)
-
-```csharp
-public partial class MyCache
-{
-    /// <summary>
-    /// Gets the singleton instance of <see cref="MyCache"/>.
-    /// </summary>
-    public static MyCache Instance { get; } = new MyCache();
-
-    private MyCache() { }
-}
-```
-
 #### Usage Example
 
 ```csharp
@@ -1182,6 +1101,113 @@ services.AddSingleton<IMyService>(sp =>
     new LoggingDecorator(sp.GetRequiredService<MyService>()));
 ```
 
+### 13. Factory Generator
+
+Generates a factory class that discovers all concrete implementations of a target interface at compile time and emits a `Create(string key)` method that maps keys to concrete types. This eliminates runtime assembly scanning and manual factory maintenance entirely.
+
+#### Attributes
+
+```csharp
+[GenerateFactory(Type interfaceType)]
+[GenerateFactoryKey(string key)]
+```
+
+**Parameters:**
+
+- `GenerateFactory` - Marks a partial class for factory code generation. The `interfaceType` parameter specifies the interface whose implementations should be discovered.
+- `GenerateFactoryKey` - Optional attribute placed on implementation classes to specify a custom key. When not present, the class name is used as the key.
+
+**Constraints:**
+
+- The `interfaceType` must be an interface. A compile-time error (`BB84SG0004`) will be emitted if a non-interface type is specified.
+- Duplicate factory keys among implementations will produce a compile-time error (`BB84SG0005`).
+- Only concrete classes with a public parameterless constructor are included.
+
+#### Example
+
+```csharp
+using BB84.SourceGenerators.Attributes;
+
+public interface IAnimal
+{
+    string Speak();
+}
+
+public class Dog : IAnimal
+{
+    public string Speak() => "Woof!";
+}
+
+public class Cat : IAnimal
+{
+    public string Speak() => "Meow!";
+}
+
+[GenerateFactory(typeof(IAnimal))]
+public partial class AnimalFactory
+{ }
+```
+
+#### Generated Code
+
+The generator creates the following static methods on the partial class:
+
+- `Create(string key)` - Creates an instance of the target interface based on the specified key using a switch expression. Throws `ArgumentException` for unknown keys.
+- `GetKeys()` - Returns an `IEnumerable<string>` of all registered factory keys.
+
+#### Usage Example
+
+```csharp
+// Create instances by type name (default key)
+IAnimal dog = AnimalFactory.Create("Dog");
+IAnimal cat = AnimalFactory.Create("Cat");
+
+Console.WriteLine(dog.Speak()); // "Woof!"
+Console.WriteLine(cat.Speak()); // "Meow!"
+
+// Unknown keys throw ArgumentException
+try
+{
+    AnimalFactory.Create("Fish");
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine(ex.Message); // "No implementation registered for key 'Fish'."
+}
+
+// Enumerate all registered keys
+foreach (string key in AnimalFactory.GetKeys())
+{
+    Console.WriteLine(key); // "Dog", "Cat"
+}
+
+// Use custom keys with [GenerateFactoryKey]
+public interface IVehicle
+{
+    string Type { get; }
+}
+
+[GenerateFactoryKey("sedan")]
+public class Car : IVehicle
+{
+    public string Type => "Car";
+}
+
+[GenerateFactoryKey("pickup")]
+public class Truck : IVehicle
+{
+    public string Type => "Truck";
+}
+
+[GenerateFactory(typeof(IVehicle))]
+public partial class VehicleFactory
+{ }
+
+// Create using custom keys
+IVehicle vehicle = VehicleFactory.Create("sedan");
+Console.WriteLine(vehicle.Type); // "Car"
+```
+
 ## Requirements
 
 - .NET Standard 2.0 or higher
@@ -1270,6 +1296,15 @@ The generated enum extension methods provide significant performance improvement
 - Supports multiple interfaces on a single decorator class
 - Automatically stays in sync with interface changes — no manual maintenance required
 - Constructor injection of the inner instance with null checking
+
+### Factory
+
+- Discovers all concrete implementations of a target interface at compile time
+- Eliminates runtime assembly scanning via `Assembly.GetTypes()` and reflection
+- Generates a `Create(string key)` method using switch expressions for zero-overhead dispatch
+- Supports custom keys via `[GenerateFactoryKey]` attribute
+- Compile-time detection of duplicate keys prevents runtime surprises
+- Automatically stays in sync as implementations are added or removed
 
 ## How It Works
 

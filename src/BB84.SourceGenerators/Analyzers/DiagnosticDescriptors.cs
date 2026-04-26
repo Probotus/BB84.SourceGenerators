@@ -42,4 +42,28 @@ internal static class DiagnosticDescriptors
 		category: "BB84.SourceGenerators",
 		defaultSeverity: DiagnosticSeverity.Error,
 		isEnabledByDefault: true);
+
+	/// <summary>
+	/// Represents a diagnostic error indicating that the [GenerateFactory] attribute has been applied
+	/// with a type argument that is not an interface.
+	/// </summary>
+	internal static readonly DiagnosticDescriptor FactoryRequiresInterfaceTypeDiagnostic = new(
+		id: "BB84SG0004",
+		title: "GenerateFactory requires an interface type",
+		messageFormat: "The [GenerateFactory] attribute on class '{0}' requires an interface type, but '{1}' is not an interface",
+		category: "BB84.SourceGenerators",
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true);
+
+	/// <summary>
+	/// Represents a diagnostic error indicating that duplicate factory keys were detected
+	/// among implementations of the target interface.
+	/// </summary>
+	internal static readonly DiagnosticDescriptor FactoryDuplicateKeyDiagnostic = new(
+		id: "BB84SG0005",
+		title: "Duplicate factory key detected",
+		messageFormat: "Duplicate factory key '{0}' detected among implementations of '{1}'",
+		category: "BB84.SourceGenerators",
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true);
 }
