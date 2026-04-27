@@ -1,3 +1,4 @@
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 // Copyright: 2026 Robert Peter Meyer
 // License: MIT
 //
@@ -14,7 +15,7 @@ namespace BB84.SourceGenerators.Attributes;
 /// When <see langword="true"/>, generates a finalizer that calls <c>Dispose(false)</c>.
 /// </param>
 /// <param name="async">
-/// When <see langword="true"/>, additionally implements <see cref="System.IAsyncDisposable"/>
+/// When <see langword="true"/>, additionally implements <see cref="IAsyncDisposable"/>
 /// with <c>DisposeAsync()</c> and <c>DisposeAsyncCore()</c>.
 /// </param>
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
@@ -26,7 +27,7 @@ internal sealed class GenerateDisposableAttribute(bool generateFinalizer = false
 	public bool GenerateFinalizer => generateFinalizer;
 
 	/// <summary>
-	/// Gets a value indicating whether <see cref="System.IAsyncDisposable"/> should be implemented.
+	/// Gets a value indicating whether <see cref="IAsyncDisposable"/> should be implemented.
 	/// </summary>
 	public bool Async => async;
 }
