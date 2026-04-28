@@ -1,4 +1,4 @@
-﻿# BB84.SourceGenerators
+# BB84.SourceGenerators
 
 A collection of C# source generators that automatically generate boilerplate code at compile time, reducing manual coding and improving code maintainability.
 
@@ -30,7 +30,7 @@ This package provides fourteen powerful source generators:
 - **Equality Generator** - Compile-time `Equals`, `GetHashCode`, and operator generation
 - **Factory Generator** - Compile-time factory pattern generation with automatic implementation discovery
 - **INI File Generator** - Compile-time INI file serialization and deserialization
-- **Notification Properties Generator** - Configurable INotifyPropertyChanged/INotifyPropertyChanging implementation
+- **Notification Properties Generator** - Configurable `INotifyPropertyChanged`/`INotifyPropertyChanging` implementation
 - **Singleton Generator** - Thread-safe singleton pattern generation with lazy or eager initialization
 - **ToString Generator** - Compile-time `ToString()` override generation
 - **Validator Generator** - Compile-time data annotation validation
@@ -669,8 +669,8 @@ public partial class UserRegistration
     [MaxLength(128)]
     public string? Password { get; set; }
 
-		[Range(1, 10)]
-		public List<int>? Skills { get; set; }
+    [Range(1, 10)]
+    public List<int>? Skills { get; set; }
 }
 ```
 
@@ -1454,7 +1454,17 @@ Source generators run during compilation and generate additional C# source files
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request but see the [Conduct](CODE_OF_CONDUCT.md) first.
+Contributions are welcome! If you have an idea for a new feature, improvement, or bug fix, please follow these steps:
+
+1. Have a look at the [Issues](https://github.com/BoBoBaSs84/BB84.SourceGenerators/issues) to see if your idea has already been discussed.
+2. If you want to work on an existing issue, please comment on the issue to let others know you're working on it.
+3. Fork the repository and create a new branch for your contribution.
+4. Make your changes and commit them with clear and descriptive messages.
+5. Push your changes to your forked repository and submit a pull request to the main repository.
+
+## Code of Conduct
+
+We expect all contributors to adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
